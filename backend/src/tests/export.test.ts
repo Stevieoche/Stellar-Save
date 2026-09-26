@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- standalone test harness with hand-rolled jest/expect scaffolding */
 // Mock jest since it's not installed in this environment
 function describe(name: string, fn: () => any) { console.log(`Describe: ${name}`); fn(); }
 function beforeEach(fn: () => any) { fn(); }

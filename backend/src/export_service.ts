@@ -63,12 +63,13 @@ export class ExportService {
       job.completedAt = Date.now();
 
       await this.emailService.sendExportEmail(email, job.fileUrl);
-    } catch (error: any) {
+    } catch (error: unknown) {
       job.status = 'failed';
-      job.error = error.message;
+      job.error = error instanceof Error ? error.message : String(error);
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- internal CSV serializer accepts arbitrary export payloads
   private convertToCSV(data: any): string {
     let csv = 'Type,ID,Value,Timestamp\n';
 

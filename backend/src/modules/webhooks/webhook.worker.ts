@@ -23,8 +23,8 @@ export class WebhookWorker extends WorkerHost {
       });
 
       this.logger.log(`Webhook delivered successfully to ${url}`);
-    } catch (error: any) {
-      this.logger.error(`Webhook delivery failed to ${url}: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(`Webhook delivery failed to ${url}: ${error instanceof Error ? error.message : String(error)}`);
       throw error; // BullMQ will retry
     }
   }

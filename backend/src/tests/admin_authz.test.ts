@@ -6,6 +6,7 @@
  * and reject unauthenticated requests.
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- inline mock res object in test assertions */
 import { describe, it, expect } from '@jest/globals';
 
 describe('Admin Endpoints Authorization', () => {

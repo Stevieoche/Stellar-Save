@@ -4,6 +4,7 @@ import { WarehouseExportPipeline } from '../../warehouse_export';
 jest.mock('../../warehouse_export');
 
 describe('WarehouseHandler', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock S3 client needs no type; only duck-typed by WarehouseHandler
   let mockS3Client: any;
 
   beforeEach(() => {

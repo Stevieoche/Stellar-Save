@@ -23,7 +23,8 @@ export interface PushNotificationProvider {
  */
 export class FirebaseProvider implements PushNotificationProvider {
   private projectId: string;
-  private serviceAccount: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase service account JSON shape is not typed in this codebase
+  private serviceAccount: Record<string, any>;
 
   constructor(projectId: string, serviceAccountJson: string) {
     this.projectId = projectId;
@@ -125,6 +126,7 @@ export class ApnsProvider implements PushNotificationProvider {
           if (res.statusCode === 200) {
             resolve((res.headers['apns-id'] as string) || 'apns-ok');
           } else {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- custom statusCode property added to Error for APNs
             const err: any = new Error(`APNs error: ${responseBody}`);
             err.statusCode = res.statusCode;
             reject(err);
@@ -317,9 +319,10 @@ export class PushNotificationService {
         }
         try {
           await provider.send(token, title, body, data);
-        } catch (err: any) {
+        } catch (err: unknown) {
           // 410 (APNs Gone) or 404 (FCM invalid) => prune token
-          if (err.statusCode === 410 || err.statusCode === 404) {
+          const statusCode = (err as { statusCode?: number }).statusCode;
+          if (statusCode === 410 || statusCode === 404) {
             await deviceTokenService.markTokenInvalid(token);
             logger.info('Pruned invalid mobile token', { platform });
           } else {

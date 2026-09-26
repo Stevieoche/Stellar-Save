@@ -54,7 +54,8 @@ export class AdminService {
     action: string,
     targetId?: string,
     targetType?: string,
-    metadata?: any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AuditLog.metadata accepts arbitrary JSON
+    metadata?: Record<string, any>
   ) {
     const log: AuditLog = {
       id: `log_${Date.now()}`,

@@ -57,7 +57,7 @@ export function createWebhookRouter(): Router {
         orderBy: { createdAt: 'desc' },
       });
       // Mask secrets in list response
-      return res.json(webhooks.map((w: any) => ({ ...w, secret: undefined })));
+      return res.json(webhooks.map((w: { secret?: string; [key: string]: unknown }) => ({ ...w, secret: undefined })));
     } catch {
       return next(new AppError('WEBHOOKS_FETCH_FAILED', 'Failed to fetch webhooks', 500));
     }
@@ -86,7 +86,8 @@ export function createWebhookRouter(): Router {
 
     if (!userId) return next(new AppError('MISSING_FIELDS', 'userId is required', 400));
 
-    const updateData: any = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma dynamic where clause for webhook lookup
+    const updateData: Record<string, any> = {};
     if (url !== undefined) {
       try {
         new URL(url);
@@ -142,9 +143,11 @@ export async function deliverWebhookEvent(
   payload: Record<string, unknown>,
   groupId?: string
 ): Promise<void> {
-  const where: any = { isActive: true, events: { has: event } };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma dynamic where clause for webhook query
+  const where: Record<string, any> = { isActive: true, events: { has: event } };
   if (groupId) where.OR = [{ groupId }, { groupId: null }];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma webhook records have no generated type here
   let webhooks: any[];
   try {
     webhooks = await (prisma as any).webhook.findMany({ where });
@@ -156,7 +159,7 @@ export async function deliverWebhookEvent(
   const body = JSON.stringify({ event, timestamp, data: payload });
 
   await Promise.allSettled(
-    webhooks.map(async (webhook: any) => {
+    webhooks.map(async (webhook: { id: string; url: string; secret: string }) => {
       const sig = crypto
         .createHmac('sha256', webhook.secret)
         .update(`${timestamp}.${body}`)
@@ -176,8 +179,8 @@ export async function deliverWebhookEvent(
         if (!res.ok) {
           logger.error(`Webhook delivery failed for ${webhook.id}: HTTP ${res.status}`);
         }
-      } catch (err: any) {
-        logger.error(`Webhook delivery error for ${webhook.id}: ${err.message}`);
+      } catch (err: unknown) {
+        logger.error(`Webhook delivery error for ${webhook.id}: ${err instanceof Error ? err.message : String(err)}`);
       }
     })
   );

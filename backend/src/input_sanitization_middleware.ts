@@ -118,6 +118,7 @@ export class InputSanitizer {
   /**
    * Sanitize an entire object recursively
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- recursive sanitizer accepts arbitrary JSON objects
   static sanitizeObject(obj: any, options: SanitizationOptions = {}): any {
     if (obj === null || obj === undefined) {
       return obj;
@@ -136,6 +137,7 @@ export class InputSanitizer {
     }
 
     if (typeof obj === 'object') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accumulator for recursive object sanitization
       const sanitized: any = {};
       for (const [key, value] of Object.entries(obj)) {
         // Sanitize the key as well
@@ -154,6 +156,7 @@ export class InputSanitizer {
   /**
    * Validate and sanitize common field types
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accepts arbitrary metadata JSON
   static sanitizeGroupMetadata(metadata: any): any {
     return this.sanitizeObject(metadata, {
       allowHtml: false,
@@ -162,6 +165,7 @@ export class InputSanitizer {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accepts arbitrary profile JSON
   static sanitizeProfileData(profile: any): any {
     return this.sanitizeObject(profile, {
       allowHtml: false,

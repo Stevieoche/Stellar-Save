@@ -122,8 +122,9 @@ export async function seedFixtures(options: {
   users?: number;
   groups?: number;
   metrics?: boolean;
-} = {}): Promise<any> {
+} = {}): Promise<Record<string, unknown>> {
   const prisma = getPrisma();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixtures accumulates heterogeneous Prisma records
   const fixtures: any = {};
 
   const { users = 0, groups = 0, metrics = false } = options;
@@ -189,6 +190,7 @@ export async function createTestTransaction(data: {
  */
 export async function assertDbRecordExists(
   model: keyof PrismaClient,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma where clause is dynamically shaped per model
   where: any
 ): Promise<void> {
   const prisma = getPrisma();
@@ -203,6 +205,7 @@ export async function assertDbRecordExists(
  */
 export async function assertDbRecordNotExists(
   model: keyof PrismaClient,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma where clause is dynamically shaped per model
   where: any
 ): Promise<void> {
   const prisma = getPrisma();

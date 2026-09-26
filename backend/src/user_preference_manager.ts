@@ -189,7 +189,7 @@ export class UserPreferenceManager {
       emailEnabledPercent: total > 0 ? ((emailEnabled / total) * 100).toFixed(2) : 0,
       pushEnabledPercent: total > 0 ? ((pushEnabled / total) * 100).toFixed(2) : 0,
       byFrequency: Object.fromEntries(
-        byFrequency.map((group: any) => [group.emailFrequency, group._count])
+        byFrequency.map((group: { emailFrequency: string; _count: number }) => [group.emailFrequency, group._count])
       ),
     };
   }

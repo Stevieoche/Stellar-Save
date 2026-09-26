@@ -27,7 +27,12 @@ import type { FeedbackService } from '../feedback_service';
 import type { UserPreference } from '../models';
 import type { RecommendationEngine } from '../recommendation';
 import type { RecoveryService } from '../recovery_service';
-import type { NextFunction } from 'express';
+import type { NextFunction, Request } from 'express';
+
+/** Extended request type for routes protected by apiKeyAuthMiddleware */
+interface ApiKeyRequest extends Request {
+  apiKey: { keyId: string; userId: string };
+}
 
 // ── Shared service instances (passed in from app) ────────────────────────────
 export interface V1Services {
@@ -280,7 +285,7 @@ export function createV1Router(services: V1Services): Router {
     try {
       const { contractId, eventType, startLedger, endLedger, startTime, endTime } = req.query;
       const pageParams = parseOffsetParams(req.query);
-      const options: any = {};
+      const options: Record<string, string | number | Date> = {};
       if (contractId) options.contractId = contractId as string;
       if (eventType) options.eventType = eventType as string;
       if (startLedger) options.startLedger = parseInt(startLedger as string);
@@ -290,7 +295,8 @@ export function createV1Router(services: V1Services): Router {
       options.limit = pageParams.limit;
       options.offset = pageParams.offset;
 
-      const result = await eventIndexer.getEvents(options);
+      const result = await eventIndexer.getEvents(options as Parameters<typeof eventIndexer.getEvents>[0]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- getEvents return shape varies between the two overloads
       const items: any[] = Array.isArray(result) ? result : ((result as any).events ?? []);
       const total: number = Array.isArray(result)
         ? items.length
@@ -315,7 +321,7 @@ export function createV1Router(services: V1Services): Router {
       });
       res.json({
         totalEvents,
-        eventTypeBreakdown: eventTypes.map((type: any) => ({
+        eventTypeBreakdown: eventTypes.map((type: { eventType: string; _count: { eventType: number } }) => ({
           type: type.eventType,
           count: type._count.eventType,
         })),
@@ -550,7 +556,7 @@ export function createV1Router(services: V1Services): Router {
       headers: ['date', 'group_id', 'type', 'amount', 'transaction_hash'],
     });
 
-    csvStream.on('error', (err: any) => {
+    csvStream.on('error', (err: unknown) => {
       logger.error('CSV stream error', { error: String(err) });
       if (!res.headersSent) res.status(500).end();
     });
@@ -595,7 +601,7 @@ export function createV1Router(services: V1Services): Router {
     }
   });
 
-  router.patch('/admin/users/:id', adminAuthMiddleware, async (req: any, res, next) => {
+  router.patch('/admin/users/:id', adminAuthMiddleware, async (req: Request, res, next) => {
     try {
       const { id } = req.params;
       const { updates, adminId } = req.body;
@@ -610,7 +616,7 @@ export function createV1Router(services: V1Services): Router {
     }
   });
 
-  router.delete('/admin/users/:id', adminAuthMiddleware, async (req: any, res, next) => {
+  router.delete('/admin/users/:id', adminAuthMiddleware, async (req: Request, res, next) => {
     try {
       const { id } = req.params;
       const { adminId } = req.body;
@@ -636,15 +642,15 @@ export function createV1Router(services: V1Services): Router {
     }
   });
 
-  router.post('/admin/groups/:id/flag', adminAuthMiddleware, async (req: any, res, next) => {
+  router.post('/admin/groups/:id/flag', adminAuthMiddleware, async (req: Request, res, next) => {
     try {
       const { id } = req.params;
-      const { flagged, adminId } = req.body;
+      const { flagged, adminId } = req.body as { flagged: boolean; adminId: string };
       if (typeof flagged !== 'boolean')
         return next(new AppError('VALIDATION_ERROR', 'flagged must be boolean', 400));
       if (!adminId) return next(new AppError('VALIDATION_ERROR', 'adminId is required', 400));
       const { mockGroups } = await import('../mock_data');
-      const group = mockGroups.find((g: any) => g.id === id);
+      const group = mockGroups.find((g) => g.id === id);
       if (!group) return next(new AppError('NOT_FOUND', 'Group not found', 404));
       adminService.logAction(adminId, 'FLAG_GROUP', id, 'Group', { flagged });
       res.json({ ...group, flagged });
@@ -668,7 +674,7 @@ export function createV1Router(services: V1Services): Router {
 
   // ── API Key Management (Issue #1030) ──────────────────────────────────────
 
-  router.post('/api-keys', async (req: any, res: any, next: NextFunction) => {
+  router.post('/api-keys', async (req: Request, res, next: NextFunction) => {
     try {
       const { userId } = req.body;
       if (!userId) return next(new AppError('VALIDATION_ERROR', 'userId is required', 400));
@@ -684,7 +690,7 @@ export function createV1Router(services: V1Services): Router {
     }
   });
 
-  router.get('/api-keys', apiKeyAuthMiddleware, async (req: any, res: any, next: NextFunction) => {
+  router.get('/api-keys', apiKeyAuthMiddleware, async (req: ApiKeyRequest, res, next: NextFunction) => {
     try {
       const pageParams = parseOffsetParams(req.query, { limit: 20 });
       const allKeys = await apiKeyService.getKeysForUser(req.apiKey.userId);
@@ -699,7 +705,7 @@ export function createV1Router(services: V1Services): Router {
   router.delete(
     '/api-keys/:keyId',
     apiKeyAuthMiddleware,
-    async (req: any, res: any, next: NextFunction) => {
+    async (req: ApiKeyRequest, res, next: NextFunction) => {
       try {
         await apiKeyService.revokeKey(req.params.keyId);
         res.json({ message: 'API key revoked' });
@@ -713,7 +719,7 @@ export function createV1Router(services: V1Services): Router {
   router.get(
     '/api-keys/:keyId/usage',
     apiKeyAuthMiddleware,
-    async (req: any, res: any, next: NextFunction) => {
+    async (req: ApiKeyRequest, res, next: NextFunction) => {
       try {
         const stats = await apiKeyService.getUsageStats(
           req.params.keyId,
@@ -732,7 +738,7 @@ export function createV1Router(services: V1Services): Router {
   router.get(
     '/public/groups',
     apiKeyAuthMiddleware,
-    async (req: any, res: any, next: NextFunction) => {
+    async (req: ApiKeyRequest, res, next: NextFunction) => {
       try {
         const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
         const offset = parseInt(req.query.offset as string) || 0;
@@ -754,7 +760,7 @@ export function createV1Router(services: V1Services): Router {
   router.get(
     '/public/stats',
     apiKeyAuthMiddleware,
-    async (req: any, res: any, next: NextFunction) => {
+    async (req: ApiKeyRequest, res, next: NextFunction) => {
       try {
         const stats = await analyticsService.getGroupsOverviewStats();
         await recordApiUsage(req, res);

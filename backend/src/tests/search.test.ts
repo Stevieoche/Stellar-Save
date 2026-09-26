@@ -1,5 +1,6 @@
 import { SearchService } from '../search';
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- mock Elasticsearch client params are untyped */
 // Mock Elasticsearch Client
 class MockClient {
   indices = {
