@@ -50,6 +50,7 @@ export class WebhookService {
     return { success: true };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event payload shape varies by event type
   async dispatchEvent(event: string, payload: any) {
     logger.info(`Event dispatched: ${event}`, payload);
     // TODO: Implement real logic with Prisma later

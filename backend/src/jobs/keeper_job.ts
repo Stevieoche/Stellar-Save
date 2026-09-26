@@ -14,10 +14,12 @@ import type { IStellarClient} from '../lib/stellar_client';
 export class KeeperJob {
   private contractId: string;
   private stellarClient: IStellarClient;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma client injected at runtime for testability
   private db: any;
   private task?: CronJob;
   private handler?: KeeperHandler;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma client injected at runtime for testability
   constructor(contractId: string, rpcUrlOrClient: string | IStellarClient, dbClient?: any) {
     this.contractId = contractId;
     if (typeof rpcUrlOrClient === 'string') {
@@ -57,6 +59,7 @@ export function startKeeperJob(
   schedule: string,
   contractId: string,
   rpcUrlOrClient: string | IStellarClient,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma client injected at runtime for testability
   dbClient?: any
 ): KeeperJob {
   const job = new KeeperJob(contractId, rpcUrlOrClient, dbClient);

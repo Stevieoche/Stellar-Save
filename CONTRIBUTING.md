@@ -15,6 +15,7 @@ This guide covers everything you need to get started: environment setup, coding 
 - [Development Setup](#development-setup)
 - [Project Structure](#project-structure)
 - [Coding Standards](#coding-standards)
+- [Git Hooks](#git-hooks)
 - [Commit Message Conventions](#commit-message-conventions)
 - [Testing Requirements](#testing-requirements)
 - [Pull Request Process](#pull-request-process)
@@ -188,6 +189,9 @@ pub fn require_creator(env: &Env, group: &Group) -> Result<(), ContractError> {
 - Keep components under ~150 lines; extract sub-components when they grow larger
 - Use semantic HTML for accessibility (`<button>`, `<nav>`, `<main>`, etc.)
 - Run `npm run lint` before committing — ESLint is enforced in CI
+- **ESLint error-level rules** (set to `error`, not `warn`, in `eslint.config.base.js` — zero tolerance repo-wide):
+  - `@typescript-eslint/no-explicit-any` — avoid `any`; use `unknown` and narrow, or add an `eslint-disable-next-line` with a one-line justification comment
+  - `@typescript-eslint/no-unused-vars` — remove unused variables; prefix intentionally-unused parameters with `_`
 - **Import Ordering**: enforced by `eslint-plugin-import` (`import/order`, error). Groups are separated by a blank line, imports sorted alphabetically (case-insensitive) within each group: `builtin` → `external` → `internal` → `parent`/`sibling` (`../`, `./`) → `index` → `type`. See the `import/order` rule in `eslint.config.base.js`.
 - **Circular Dependencies**: Circular dependencies are strictly forbidden (`import/no-cycle`). Ensure modules are strictly decoupled and acyclic
 
@@ -219,6 +223,62 @@ const ContributionCard = ({ amount, member, isPaid }: ContributionCardProps) => 
   - **Trailing whitespace** trimmed automatically (except in Markdown `.md` files)
   - **Indentation**: 4 spaces for Rust (`.rs`); 2 spaces for TypeScript (`.ts`, `.tsx`), JavaScript, JSON, CSS/SCSS, Shell, TOML, YAML, and SQL
 - Do not commit secrets, private keys, or `.env` files — `.gitignore` covers common cases but double-check before staging
+
+---
+
+## Git Hooks
+
+This project uses [Husky](https://typicode.github.io/husky/) to enforce quality gates automatically on every commit and push.
+
+### pre-commit — lint + format on staged files
+
+`.husky/pre-commit` runs **lint-staged**, which applies the following checks to every staged file before the commit is recorded:
+
+| File pattern | Checks |
+| --- | --- |
+| `*.{ts,tsx,js,jsx,mjs,cjs}` | `eslint --max-warnings 0` **and** `prettier --check` |
+| `frontend/**/*.css` | `stylelint` |
+| `*.{json,yaml,yml}` | `prettier --check` |
+| `*.md` | `prettier --check` |
+
+A staged file that fails lint **or** formatting will abort the commit. Fix the reported violations, re-stage the file, and commit again.
+
+### commit-msg — conventional commits
+
+`.husky/commit-msg` runs `commitlint` to validate your commit message against the Conventional Commits format. See [Commit Message Conventions](#commit-message-conventions) below for the full spec.
+
+### pre-push — dependency audit
+
+`.husky/pre-push` runs `scripts/pre-push-audit.sh`, which scans npm and Cargo dependencies for known CVEs. HIGH and CRITICAL findings block the push. See [Security: Pre-push Dependency Audit](#security-pre-push-dependency-audit) for the triage policy.
+
+### Bypass policy
+
+> **`--no-verify` is strongly discouraged.** Bypassing hooks defeats the quality gate that protects every contributor. Only use it in genuine emergencies (e.g. pushing a revert commit when CI is broken and time is critical), and document the reason in the PR description. Never bypass on `main`.
+
+```bash
+# Emergency bypass — document the reason in your PR
+git commit --no-verify -m "fix: emergency revert of breaking change"
+git push --no-verify
+```
+
+Bypasses are visible in the git log and will be flagged during code review.
+
+### Rust local pre-commit recommendation
+
+Before committing Rust changes, run these checks locally to avoid a CI failure:
+
+```bash
+# Format all Rust crates in the workspace
+cargo fmt --all
+
+# Run Clippy with zero-warning policy (mirrors CI)
+cargo clippy --all-targets --all-features -- -D warnings
+
+# Confirm tests still pass
+cargo test --workspace
+```
+
+These are not wired into the Husky pre-commit hook (to keep commit speed fast for JS-only changes), but they are **required to pass in CI** before merge.
 
 ---
 
@@ -540,6 +600,54 @@ See [docs/dependency-update-policy.md](docs/dependency-update-policy.md) for the
 | MODERATE / LOW | Log and track; do not block push                                                  |
 
 The script exits non-zero only on HIGH or CRITICAL findings. Lower-severity advisories are reported but do not fail the check.
+
+---
+
+## Rust Code Quality
+
+### Clippy — zero-warning policy
+
+All Rust crates in the workspace (under `contracts/`) must pass `cargo clippy` with zero warnings before a PR can merge. CI enforces this automatically via `.github/workflows/clippy.yml`.
+
+**Run locally before opening a PR:**
+
+```bash
+# Check all targets and features — mirrors the CI command exactly
+cargo clippy --all-targets --all-features -- -D warnings
+```
+
+If a warning is a confirmed false positive (e.g. a Soroban SDK pattern that Clippy misidentifies), suppress it with a documented `#[allow(...)]` attribute:
+
+```rust
+// Soroban's contracttype macro generates code that triggers dead_code; the
+// variant is used via XDR deserialization at runtime, not a direct Rust call.
+#[allow(dead_code)]
+#[contracttype]
+pub enum GroupStatus { Active, Closed }
+```
+
+**Rules:**
+- Every `#[allow(...)]` must have a one-line comment explaining why the suppression is justified.
+- Blanket `#[allow(clippy::all)]` or `#[allow(warnings)]` on a module or crate are not permitted.
+- New code must not introduce any unjustified Clippy warnings.
+
+### rustfmt — consistent formatting
+
+All Rust source must be formatted with `cargo fmt` before committing. The `rustfmt.toml` at the repo root pins `edition = "2021"` to match `[workspace.package]`.
+
+**Run locally:**
+
+```bash
+# Format every crate in the workspace
+cargo fmt --all
+
+# Dry-run check (what CI runs) — exits non-zero if any file would change
+cargo fmt --all --check
+```
+
+CI runs `cargo fmt --all --check` on every PR. A failing format check blocks merge.
+
+**Recommended local workflow:** run `cargo fmt --all` before staging Rust files for commit. See [Git Hooks → Rust local pre-commit recommendation](#rust-local-pre-commit-recommendation) above.
 
 ---
 

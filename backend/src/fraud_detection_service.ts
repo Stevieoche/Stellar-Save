@@ -77,7 +77,7 @@ export class FraudDetectionService {
 
     if (contributions.length > 1) {
       const amounts = contributions
-        .map((c: any) => Number(c.data?.amount ?? 0))
+        .map((c: { data: Record<string, unknown> }) => Number(c.data?.amount ?? 0))
         .filter((a: number) => a > 0);
       const avg = amounts.reduce((s: number, a: number) => s + a, 0) / amounts.length;
       const outliers = amounts.filter((a: number) => a > avg * this.outlierFactor);

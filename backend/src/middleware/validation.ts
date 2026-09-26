@@ -7,7 +7,8 @@ import type { ZodSchema } from 'zod';
 
 
 export interface AuthenticatedRequest extends Request {
-  user?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JWT payload shape varies; narrowed per route
+  user?: Record<string, any>;
 }
 
 export interface ValidationError {
@@ -85,6 +86,7 @@ export class ValidationMiddleware {
     return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
       try {
         const validated = schema.parse(req.query);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zod-validated query cast back to Express query string map
         req.query = validated as any;
         next();
       } catch (err) {
@@ -117,6 +119,7 @@ export class ValidationMiddleware {
     return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
       try {
         const validated = schema.parse(req.params);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zod-validated params cast back to Express params map
         req.params = validated as any;
         next();
       } catch (err) {

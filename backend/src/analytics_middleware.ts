@@ -29,6 +29,7 @@ export function createAnalyticsCacheMiddleware(ttlSeconds: number = 3600) {
       // Store original res.json to intercept response
       const originalJson = res.json.bind(res);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- overriding Express res.json signature
       res.json = (data: any) => {
         // Cache the response
         redis.set(cacheKey, data, ttlSeconds).catch((err) => {

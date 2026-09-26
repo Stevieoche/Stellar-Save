@@ -9,6 +9,7 @@ import { logger, errFields, winstonLogger } from '../lib/logger';
  * so assertions don't depend on the timing of the Console transport's stdout
  * writes (which can be flushed after the test body returns).
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- standalone test harness; return type is raw parsed JSON
 function capture(fn: () => void): any[] {
   const chunks: string[] = [];
   const sink = new Writable({
