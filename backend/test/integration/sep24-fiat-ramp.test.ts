@@ -22,6 +22,7 @@ import type { Server } from 'http';
 
 describe('SEP-24 Fiat Ramp Integration Tests', () => {
   let sandbox: Sep24Sandbox;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Sep24Sandbox.getApp() returns an Express app without a named type
   let sandboxApp: any;
   let sandboxServer: Server;
   const SANDBOX_URL = 'http://localhost:8545';

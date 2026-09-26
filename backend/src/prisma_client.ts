@@ -54,6 +54,7 @@ const prismaSingleton = new PrismaReadReplicaClient();
 
 /** Single managed Prisma instance — import this everywhere instead of `new PrismaClient()`. */
 export const prisma = new Proxy(prismaSingleton.getClient(), {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Proxy trap requires any for the target parameter
   get: (target: any, prop: string) => {
     if (typeof target[prop] === 'function') {
       const isWrite = [
@@ -66,6 +67,7 @@ export const prisma = new Proxy(prismaSingleton.getClient(), {
         'deleteMany',
       ].some((m) => prop.endsWith(m));
       const client = prismaSingleton.getClient(isWrite);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- client is PrismaClient; prop access via index signature
       return (client as any)[prop]?.bind(client);
     }
     return target[prop];

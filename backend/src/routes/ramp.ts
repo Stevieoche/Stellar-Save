@@ -10,6 +10,19 @@ import { initiateDeposit, initiateWithdraw, syncTransactionStatus, getTransactio
 import type { AuthenticatedRequest } from '../auth_middleware';
 import type { Response, NextFunction } from 'express';
 
+/** Narrow an unknown catch value to a message string. */
+function toMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+/** Returns true when the error indicates a tripped circuit breaker. */
+function isCircuitOpen(err: unknown): boolean {
+  return (
+    err instanceof CircuitBreakerOpenError ||
+    (err instanceof Error && (err as Error & { code?: string }).code === 'CIRCUIT_OPEN')
+  );
+}
+
 export function createRampRouter(): Router {
   const router = Router();
 
@@ -50,20 +63,20 @@ export function createRampRouter(): Router {
           userId: req.walletAddress!,
         });
         return res.status(201).json(result);
-      } catch (err: any) {
-        logger.error('[ramp] deposit initiation failed', { error: err?.message });
-        if (err instanceof CircuitBreakerOpenError || err?.code === 'CIRCUIT_OPEN') {
+      } catch (err: unknown) {
+        logger.error('[ramp] deposit initiation failed', { error: toMessage(err) });
+        if (isCircuitOpen(err)) {
           return next(
             new AppError(
               'RAMP_CIRCUIT_OPEN',
               'Fiat ramp provider is currently unavailable (circuit open)',
               503,
-              err?.message
+              toMessage(err)
             )
           );
         }
         return next(
-          new AppError('DEPOSIT_INITIATION_FAILED', 'Failed to initiate deposit', 502, err?.message)
+          new AppError('DEPOSIT_INITIATION_FAILED', 'Failed to initiate deposit', 502, toMessage(err))
         );
       }
     }
@@ -106,15 +119,15 @@ export function createRampRouter(): Router {
           userId: req.walletAddress!,
         });
         return res.status(201).json(result);
-      } catch (err: any) {
-        logger.error('[ramp] withdraw initiation failed', { error: err?.message });
-        if (err instanceof CircuitBreakerOpenError || err?.code === 'CIRCUIT_OPEN') {
+      } catch (err: unknown) {
+        logger.error('[ramp] withdraw initiation failed', { error: toMessage(err) });
+        if (isCircuitOpen(err)) {
           return next(
             new AppError(
               'RAMP_CIRCUIT_OPEN',
               'Fiat ramp provider is currently unavailable (circuit open)',
               503,
-              err?.message
+              toMessage(err)
             )
           );
         }
@@ -123,7 +136,7 @@ export function createRampRouter(): Router {
             'WITHDRAW_INITIATION_FAILED',
             'Failed to initiate withdraw',
             502,
-            err?.message
+            toMessage(err)
           )
         );
       }
@@ -139,19 +152,19 @@ export function createRampRouter(): Router {
       try {
         const record = await syncTransactionStatus(req.params.id);
         return res.json(record);
-      } catch (err: any) {
-        logger.error('[ramp] status sync failed', { error: err?.message });
-        if (err instanceof CircuitBreakerOpenError || err?.code === 'CIRCUIT_OPEN') {
+      } catch (err: unknown) {
+        logger.error('[ramp] status sync failed', { error: toMessage(err) });
+        if (isCircuitOpen(err)) {
           return next(
             new AppError(
               'RAMP_CIRCUIT_OPEN',
               'Fiat ramp provider is currently unavailable (circuit open)',
               503,
-              err?.message
+              toMessage(err)
             )
           );
         }
-        return next(new AppError('RAMP_TRANSACTION_NOT_FOUND', err?.message ?? 'Not found', 404));
+        return next(new AppError('RAMP_TRANSACTION_NOT_FOUND', toMessage(err) || 'Not found', 404));
       }
     }
   );
@@ -165,8 +178,8 @@ export function createRampRouter(): Router {
       try {
         const record = await getTransaction(req.params.id);
         return res.json(record);
-      } catch (err: any) {
-        return next(new AppError('RAMP_TRANSACTION_NOT_FOUND', err?.message ?? 'Not found', 404));
+      } catch (err: unknown) {
+        return next(new AppError('RAMP_TRANSACTION_NOT_FOUND', toMessage(err) || 'Not found', 404));
       }
     }
   );

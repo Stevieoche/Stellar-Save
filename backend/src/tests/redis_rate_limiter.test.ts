@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- mock Express req/res objects in test helpers */
 import {
   createTieredRateLimiter,
   configureTier,

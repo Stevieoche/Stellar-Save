@@ -29,6 +29,7 @@ const transports: winston.transport[] = [
     stderrLevels: ['error'],
   }),
   // Rotating file transport — one file per day, keep 14 days
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- DailyRotateFile is not exported from the Winston types namespace
   new (winston.transports as any).DailyRotateFile({
     filename: 'logs/app-%DATE%.log',
     datePattern: 'YYYY-MM-DD',
@@ -149,7 +150,9 @@ if (config.nodeEnv !== 'test') {
 }
 
 // ── Lazy prisma import — avoids circular dep (logger ← prisma_client ← logger) ─
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- lazy import; typed as PrismaClient after assignment
 let _prisma: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- returns the real PrismaClient at runtime
 async function getPrisma(): Promise<any> {
   if (!_prisma) {
     try {

@@ -8,6 +8,11 @@ import { getQuote, sendPayment, getPaymentStatus } from '../services/sep31';
 import type { AuthenticatedRequest } from '../auth_middleware';
 import type { Response, NextFunction } from 'express';
 
+/** Narrow an unknown catch value to a message string. */
+function toMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 export function createSep31Router(): Router {
   const router = Router();
 
@@ -29,9 +34,9 @@ export function createSep31Router(): Router {
       try {
         const quote = await getQuote({ anchorDomain, sendAsset, receiveAsset, amount });
         return res.json(quote);
-      } catch (err: any) {
-        logger.error('[sep31] quote error', { error: err?.message });
-        return next(new AppError('QUOTE_FETCH_FAILED', 'Failed to get quote', 502, err?.message));
+      } catch (err: unknown) {
+        logger.error('[sep31] quote error', { error: toMessage(err) });
+        return next(new AppError('QUOTE_FETCH_FAILED', 'Failed to get quote', 502, toMessage(err)));
       }
     }
   );
@@ -42,7 +47,7 @@ export function createSep31Router(): Router {
     jwtAuthMiddleware,
     async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
       const { anchorDomain, sendAssetCode, receiveAssetCode, amount, receiverId, fields, groupId } =
-        req.body as Record<string, any>;
+        req.body as Record<string, string | Record<string, string> | undefined>;
       if (!anchorDomain || !sendAssetCode || !receiveAssetCode || !amount || !receiverId) {
         return next(
           new AppError(
@@ -54,23 +59,24 @@ export function createSep31Router(): Router {
       }
       try {
         const result = await sendPayment({
-          anchorDomain,
-          sendAssetCode,
-          receiveAssetCode,
-          amount,
+          anchorDomain: anchorDomain as string,
+          sendAssetCode: sendAssetCode as string,
+          receiveAssetCode: receiveAssetCode as string,
+          amount: amount as string,
           senderId: req.walletAddress!,
-          receiverId,
-          fields: fields ?? {},
-          groupId,
+          receiverId: receiverId as string,
+          fields: (fields as Record<string, string>) ?? {},
+          groupId: groupId as string | undefined,
         });
         return res.status(201).json(result);
-      } catch (err: any) {
-        logger.error('[sep31] send error', { error: err?.message });
-        const isValidation = err?.message?.includes('Missing required compliance');
+      } catch (err: unknown) {
+        const msg = toMessage(err);
+        logger.error('[sep31] send error', { error: msg });
+        const isValidation = msg.includes('Missing required compliance');
         return next(
           new AppError(
             isValidation ? 'MISSING_COMPLIANCE_FIELDS' : 'SEP31_SEND_FAILED',
-            err?.message ?? 'Send failed',
+            msg || 'Send failed',
             isValidation ? 422 : 502
           )
         );
@@ -89,9 +95,10 @@ export function createSep31Router(): Router {
       try {
         const status = await getPaymentStatus(anchorDomain, req.params.id);
         return res.json(status);
-      } catch (err: any) {
-        logger.error('[sep31] status error', { error: err?.message });
-        return next(new AppError('SEP31_STATUS_NOT_FOUND', err?.message ?? 'Not found', 404));
+      } catch (err: unknown) {
+        const msg = toMessage(err);
+        logger.error('[sep31] status error', { error: msg });
+        return next(new AppError('SEP31_STATUS_NOT_FOUND', msg || 'Not found', 404));
       }
     }
   );

@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- graphql resolver results are dynamically shaped
 export const paginateResults = (items: any[], limit?: number, offset?: number): any[] => {
   if (!limit && !offset) return items;
   const pageParams = { limit: limit ?? 20, offset: offset ?? 0 };

@@ -8,7 +8,8 @@ import { prisma } from './prisma_client';
  */
 export class NotificationService {
   private sendgridApiKey: string;
-  private firebaseServiceAccount?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase service account JSON shape is not typed in this codebase
+  private firebaseServiceAccount?: Record<string, any>;
   private firebaseProjectId?: string;
   private notificationProvidersEnabled: boolean;
 
@@ -372,7 +373,7 @@ export class NotificationService {
   /**
    * Get notification history for a user
    */
-  async getNotificationHistory(userId: string, limit: number = 20): Promise<any[]> {
+  async getNotificationHistory(userId: string, limit: number = 20): Promise<unknown[]> {
     return await prisma.notification.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
@@ -397,7 +398,7 @@ export class NotificationService {
     ]);
 
     const byType: Record<string, number> = {};
-    queue.forEach((item: any) => {
+    queue.forEach((item: { notificationType: string }) => {
       byType[item.notificationType] = (byType[item.notificationType] || 0) + 1;
     });
 

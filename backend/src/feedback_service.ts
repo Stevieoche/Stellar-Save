@@ -7,6 +7,7 @@ export interface FeedbackInput {
 }
 
 export class FeedbackService {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma client type not importable from generated path in this context
   constructor(private prisma: any) {}
 
   async submit(input: FeedbackInput) {

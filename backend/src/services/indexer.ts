@@ -40,6 +40,7 @@ export class HorizonIndexer {
     this.contractId = contractId;
     this.pollIntervalMs = options.pollIntervalMs ?? 5000;
     this.pageSize = options.pageSize ?? 200;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PrismaClient constructor patched at runtime in this service
     this.prisma = new (PrismaClient as any)();
   }
 
@@ -126,7 +127,9 @@ export class HorizonIndexer {
         const res = await fetch(url.toString());
         if (!res.ok) throw new Error(`Horizon responded ${res.status} for ${url}`);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Horizon REST response has no SDK type
         const body: any = await res.json();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Horizon embedded records are untyped
         const records: any[] = body._embedded?.records ?? [];
 
         if (records.length === 0) {
@@ -166,6 +169,7 @@ export class HorizonIndexer {
   }
 
   /** Upsert one transaction; the unique constraint on txHash provides deduplication. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Horizon transaction shape not typed in this context
   private async storeTx(tx: any): Promise<void> {
     try {
       await this.prisma.indexedTransaction.upsert({
@@ -184,7 +188,7 @@ export class HorizonIndexer {
           createdAt: tx.created_at ? new Date(tx.created_at) : new Date(),
         },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Unique-constraint violations from concurrent indexers are harmless
       if (!String(err).includes('Unique constraint')) {
         logger.error('[HorizonIndexer] Failed to store tx', tx.hash, err);

@@ -28,7 +28,9 @@ interface DueGroup {
   memberCount: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma client injected at runtime for testability
 async function findDueGroups(contractId: string, db: any = prisma): Promise<DueGroup[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma JSON column type
   const contributions: Array<{ data: any }> = await db.contractEvent.findMany({
     where: { contractId, eventType: 'ContributionMade' },
     select: { data: true },
@@ -45,6 +47,7 @@ async function findDueGroups(contractId: string, db: any = prisma): Promise<DueG
     cycleMap.get(key)!.add(member);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma JSON column type
   const payouts: Array<{ data: any }> = await db.contractEvent.findMany({
     where: { contractId, eventType: 'PayoutExecuted' },
     select: { data: true },
@@ -71,9 +74,11 @@ async function findDueGroups(contractId: string, db: any = prisma): Promise<DueG
 export class KeeperHandler {
   private contractId: string;
   private stellarClient: IStellarClient;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma client injected at runtime for testability
   private db: any;
   private retryMap = new Map<string, number>();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma client injected at runtime for testability
   constructor(contractId: string, stellarClient: IStellarClient, dbClient?: any) {
     this.contractId = contractId;
     this.stellarClient = stellarClient;
@@ -103,8 +108,9 @@ export class KeeperHandler {
       await this.stellarClient.executePayoutsBatch(groupIds, this.contractId);
       keeperPayoutsExecuted.inc({ status: 'success' }, groupIds.length);
       for (const g of actionable) this.retryMap.delete(`${g.groupId}:${g.cycleNumber}`);
-    } catch (err: any) {
-      logger.error('[keeper] batch execution failed', { error: err?.message, groupIds });
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error('[keeper] batch execution failed', { error: error.message, groupIds });
       keeperPayoutsExecuted.inc({ status: 'failure' }, groupIds.length);
 
       for (const g of actionable) {

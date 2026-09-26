@@ -111,7 +111,7 @@ export function createV2Router(services: V1Services): Router {
             groupName,
             joinLink,
             creatorUserId,
-          } as any,
+          },
           subject.replace('{{groupName}}', groupName)
         );
 
@@ -122,8 +122,8 @@ export function createV2Router(services: V1Services): Router {
             joinLink,
           })
         );
-      } catch (err: any) {
-        logger.error('Failed to send group invitation', { error: err?.message || String(err) });
+      } catch (err: unknown) {
+        logger.error('Failed to send group invitation', { error: err instanceof Error ? err.message : String(err) });
         next(new AppError('GROUP_INVITATION_FAILED', 'Failed to send invitation', 500));
       }
     }

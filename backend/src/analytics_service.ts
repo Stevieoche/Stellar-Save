@@ -104,10 +104,12 @@ export interface AnalyticsReport {
 }
 
 export class AnalyticsService {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma client type not importable from generated path in this context
   private prisma: any;
   private cacheClient = redis;
   private cacheTTL = 3600; // 1 hour default
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma client type not importable from generated path in this context
   constructor(prisma: any) {
     this.prisma = prisma;
   }
@@ -280,7 +282,7 @@ export class AnalyticsService {
         skip: options?.offset,
       });
 
-      return metrics.map((metric: any, index: number) => ({
+      return metrics.map((metric: Record<string, unknown>, index: number) => ({
         cycleNumber: index + 1,
         cycleDate: metric.date,
         memberCount: metric.memberCount,
@@ -323,7 +325,7 @@ export class AnalyticsService {
         skip: options?.offset,
       });
 
-      const trends: PlatformStats[] = metrics.map((m: any) => ({
+      const trends: PlatformStats[] = metrics.map((m: Record<string, unknown>) => ({
         totalUsers: m.totalUsers,
         activeUsers: m.activeUsers,
         totalGroups: m.totalGroups,
@@ -493,6 +495,7 @@ export class AnalyticsService {
     return syncResult;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Soroban event shape is loosely typed from the Prisma JSON column
   private normalizeSorobanEvent(event: any): {
     eventType: string;
     eventName: string;
@@ -573,7 +576,7 @@ export class AnalyticsService {
           metricsCount: platformMetrics.length,
           topEvents: eventStats.slice(0, 10),
         },
-        platformMetrics: platformMetrics.map((m: any) => ({
+        platformMetrics: platformMetrics.map((m: { date: Date; totalUsers: number; totalGroups: number; totalContributions: number; successRate: number; totalContributionAmount: number | string }) => ({
           date: m.date,
           users: m.totalUsers,
           groups: m.totalGroups,
@@ -583,20 +586,20 @@ export class AnalyticsService {
         statistics: {
           avgUsers:
             platformMetrics.length > 0
-              ? platformMetrics.reduce((sum: number, m: any) => sum + m.totalUsers, 0) /
+              ? platformMetrics.reduce((sum: number, m: { totalUsers: number }) => sum + m.totalUsers, 0) /
                 platformMetrics.length
               : 0,
           avgGroups:
             platformMetrics.length > 0
-              ? platformMetrics.reduce((sum: number, m: any) => sum + m.totalGroups, 0) /
+              ? platformMetrics.reduce((sum: number, m: { totalGroups: number }) => sum + m.totalGroups, 0) /
                 platformMetrics.length
               : 0,
           totalContributions: platformMetrics.reduce(
-            (sum: number, m: any) => sum + m.totalContributions,
+            (sum: number, m: { totalContributions: number }) => sum + m.totalContributions,
             0
           ),
           totalRevenue: platformMetrics.reduce(
-            (sum: number, m: any) => sum + Number(m.totalContributionAmount),
+            (sum: number, m: { totalContributionAmount: number | string }) => sum + Number(m.totalContributionAmount),
             0
           ),
         },
@@ -641,7 +644,7 @@ export class AnalyticsService {
         skip: options?.offset,
       });
 
-      return reports.map((r: any) => ({
+      return reports.map((r: { reportType: string; reportName: string; startDate: Date; endDate: Date; data: unknown; createdAt: Date }) => ({
         reportType: r.reportType,
         reportName: r.reportName,
         startDate: r.startDate,
@@ -689,8 +692,8 @@ export class AnalyticsService {
         select: { data: true },
       });
 
-      const totalContributed = contributionEvents.reduce((sum: number, event: any) => {
-        const amount = Number((event.data as any)?.amount ?? 0);
+      const totalContributed = contributionEvents.reduce((sum: number, event: { data: unknown }) => {
+        const amount = Number((event.data as Record<string, unknown>)?.amount ?? 0);
         return sum + (isNaN(amount) ? 0 : amount);
       }, 0);
 
