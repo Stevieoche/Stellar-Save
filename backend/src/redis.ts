@@ -27,17 +27,19 @@ export const getCacheStats = async () => {
   };
 };
 
-export const get = async (key: string): Promise<any | null> => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic cache values are untyped JSON
+export const get = async (key: string): Promise<unknown | null> => {
   const data = await redis.get(key);
   if (data) {
     recordHit();
-    return JSON.parse(data);
+    return JSON.parse(data) as unknown;
   }
   recordMiss();
   return null;
 };
 
-export const set = async (key: string, value: any, ttlSeconds: number = 3600) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic cache values are untyped JSON
+export const set = async (key: string, value: unknown, ttlSeconds: number = 3600) => {
   await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
 };
 
@@ -61,7 +63,7 @@ export const readinessCheckCache = async (): Promise<{
   try {
     await redis.ping();
     return { up: true, latencyMs: Date.now() - start };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       up: false,
       latencyMs: Date.now() - start,

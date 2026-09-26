@@ -107,7 +107,7 @@ export interface AuditLog {
   targetId?: string;
   targetType?: string;
   timestamp: number;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 // ========== NOTIFICATION MODELS (Issue #557) ==========

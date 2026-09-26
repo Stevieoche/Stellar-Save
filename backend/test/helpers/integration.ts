@@ -57,6 +57,7 @@ export async function createTestContext(): Promise<TestContext> {
 /**
  * Helper to make authenticated requests in tests.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- supertest accepts Express app or http.Server
 export function authenticatedRequest(app: any, token: string) {
   return request(app).set('Authorization', `Bearer ${token}`);
 }
@@ -65,6 +66,7 @@ export function authenticatedRequest(app: any, token: string) {
  * Helper to make rate-limited requests and check headers.
  */
 export async function checkRateLimitHeaders(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supertest response object
   res: any
 ): Promise<{
   limit: number;

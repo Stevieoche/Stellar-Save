@@ -6,6 +6,8 @@ import { RecoveryService } from '../recovery_service';
 
 import type { S3Client } from '../backup_service';
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- standalone test harness with hand-rolled expect/test scaffolding */
+
 // ── Inline test harness (matches existing test files) ────────────────────────
 let _currentBeforeEach: (() => void) | null = null;
 const _testQueue: Array<() => Promise<void>> = [];

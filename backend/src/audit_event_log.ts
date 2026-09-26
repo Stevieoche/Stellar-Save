@@ -133,7 +133,9 @@ export class AuditEventLog {
    * concurrent writes can race on the same prevHash value.
    */
   static async record(input: AuditRecordInput): Promise<AuditEntry> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma.$transaction with Serializable isolation requires the dynamic cast
     return (prisma as any).$transaction(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- transaction client is untyped when accessed this way
       async (tx: any) => {
         // Find the latest entry to chain from
         const latest = await tx.auditEventLog.findFirst({

@@ -4,6 +4,8 @@ import {
   ImageValidationError
 } from '../services/image_storage_service';
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- mock S3 client has no strict type in test setup */
+
 import type {
   ImageUploadOptions} from '../services/image_storage_service';
 

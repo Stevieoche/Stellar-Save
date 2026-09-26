@@ -1,5 +1,7 @@
 import { createRateLimiterMiddleware } from '../rate_limiter';
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- mock Express req/res objects in test helpers */
+
 let passed = 0;
 let failed = 0;
 

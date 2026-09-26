@@ -119,8 +119,9 @@ export class WebPushService {
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         JSON.stringify(payload)
       );
-    } catch (err: any) {
-      if (err.statusCode === 410 || err.statusCode === 404) {
+    } catch (err: unknown) {
+      if (err instanceof Error && (err as NodeJS.ErrnoException & { statusCode?: number }).statusCode === 410 ||
+          err instanceof Error && (err as NodeJS.ErrnoException & { statusCode?: number }).statusCode === 404) {
         // Subscription has expired or been revoked — clean it up
         await this.prisma.pushSubscription
           .deleteMany({ where: { endpoint: sub.endpoint } })

@@ -396,8 +396,10 @@ server.listen(PORT, async () => {
 
   // Patch the ContractEventIndexer to publish events to the WS gateway
   // after each indexed event.  We do this post-init to avoid circular deps.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- private method patched post-init to avoid circular dependency
   const origStoreEvent = (eventIndexer as any).storeEvent?.bind(eventIndexer);
   if (origStoreEvent) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event shape mirrors Horizon REST response
     (eventIndexer as any).storeEvent = async (event: any) => {
       await origStoreEvent(event);
       // Publish to WebSocket subscribers

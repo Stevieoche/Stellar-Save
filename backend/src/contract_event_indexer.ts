@@ -30,6 +30,7 @@ function isMissedContribution(eventType: string): boolean {
 }
 
 // Extract member addresses from Stellar contract event topics/data
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Horizon event shape is loosely typed from the REST response
 function extractMemberAddresses(event: any): string[] {
   const addresses: string[] = [];
 
@@ -105,7 +106,8 @@ export class ContractEventIndexer {
     limit?: number;
     offset?: number;
   }) {
-    const where: any = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma dynamic where clause builder
+    const where: Record<string, any> = {};
 
     if (options.contractId) where.contractId = options.contractId;
     if (options.eventType) where.eventType = options.eventType;
@@ -163,6 +165,7 @@ export class ContractEventIndexer {
           // Guarded by the Horizon breaker so a degraded endpoint backs the poll
           // loop off immediately instead of burning the full request timeout on
           // every iteration (#1511).
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Horizon REST JSON response has no SDK type
           const data: any = await withHorizonCircuit(async () => {
             const response = await fetchWithCorrelationId(url.toString());
             sorobanRpcCallsTotal.inc({
@@ -174,6 +177,7 @@ export class ContractEventIndexer {
             }
             return response.json();
           });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Horizon embedded records are untyped
           const records: any[] = data._embedded?.records ?? [];
           span.setAttribute('indexer.records', records.length);
 
@@ -250,6 +254,7 @@ export class ContractEventIndexer {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Horizon event shape is loosely typed from the REST response
   private async storeEvent(event: any): Promise<void> {
     try {
       const stored = await withSpan(
@@ -321,6 +326,7 @@ export class ContractEventIndexer {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Horizon event shape is loosely typed from the REST response
   private async notifyOnEvent(event: any): Promise<void> {
     if (!this.webPush) return;
 
@@ -418,7 +424,8 @@ export class ContractEventIndexer {
     limit?: number;
     offset?: number;
   }) {
-    const where: any = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma dynamic where clause builder
+    const where: Record<string, any> = {};
 
     if (options.contractId) where.contractId = options.contractId;
     if (options.eventType) where.eventType = options.eventType;

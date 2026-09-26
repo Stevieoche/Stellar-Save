@@ -1,5 +1,7 @@
 import { KeeperJob } from '../jobs/keeper_job';
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- mock Prisma DB client in test setup */
+
 import type { IStellarClient } from '../lib/stellar_client';
 
 jest.mock('../metrics', () => ({

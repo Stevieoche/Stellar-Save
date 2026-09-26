@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- mock Prisma client in test setup */
+
 import { NotificationService } from '../src/notification_service';
 import { NotificationTemplateManager, NotificationEventType } from '../src/notification_template_manager';
 import { PushNotificationService, FirebaseProvider, OneSignalProvider } from '../src/push_notification_service';

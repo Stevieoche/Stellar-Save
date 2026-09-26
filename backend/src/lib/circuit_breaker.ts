@@ -19,6 +19,7 @@ export interface CircuitBreakerOptions<TResult = any> {
   /** Minimum number of total requests before evaluating threshold (default 3) */
   volumeThreshold?: number;
   /** Optional fallback handler invoked on error or open circuit */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- variadic fallback signature must accept any args
   fallback?: (error: Error, ...args: any[]) => TResult | Promise<TResult>;
   /** Identifier used when reporting state changes (default 'circuit') */
   name?: string;
@@ -120,7 +121,7 @@ export class CircuitBreaker<TArgs extends any[] = any[], TResult = any> {
       if (timer) clearTimeout(timer);
       this.onSuccess();
       return result;
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (timer) clearTimeout(timer);
       const error = err instanceof Error ? err : new Error(String(err));
       this.onFailure();

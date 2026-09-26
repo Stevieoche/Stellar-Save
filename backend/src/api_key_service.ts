@@ -45,6 +45,7 @@ export class ApiKeyService {
     });
 
     logger.info('API key generated', { userId, tier });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma dynamic model access returns untyped record
     return { key: fullKey, info: apiKey as any };
   }
 
@@ -99,7 +100,12 @@ export class ApiKeyService {
     });
   }
 
-  async getUsageStats(keyId: string, hoursBack = 24): Promise<any> {
+  async getUsageStats(keyId: string, hoursBack = 24): Promise<{
+    keyId: string;
+    period: { hours: number; since: Date };
+    requestsByMethod: Record<string, number>;
+    totalRequests: number;
+  }> {
     const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
     const usage = await (prisma as any).apiKeyUsage.groupBy({
       by: ['method', 'statusCode'],
@@ -110,11 +116,11 @@ export class ApiKeyService {
     return {
       keyId,
       period: { hours: hoursBack, since },
-      requestsByMethod: usage.reduce((acc: any, u: any) => {
+      requestsByMethod: usage.reduce((acc: Record<string, number>, u: { method: string; _count: { id: number } }) => {
         acc[u.method] = (acc[u.method] || 0) + u._count.id;
         return acc;
       }, {}),
-      totalRequests: usage.reduce((s: number, u: any) => s + u._count.id, 0),
+      totalRequests: usage.reduce((s: number, u: { _count: { id: number } }) => s + u._count.id, 0),
     };
   }
 }

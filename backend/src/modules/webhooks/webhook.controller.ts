@@ -8,6 +8,7 @@ export class WebhookController {
   constructor(private readonly webhookService: WebhookService) {}
 
   @Post()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NestJS @Body() decorator result is dynamically shaped
   async registerWebhook(@Body() body: any) {
     const userId = 'temp-user-id'; // TODO: Replace with real auth later
     return this.webhookService.registerWebhook(userId, body);
